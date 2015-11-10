@@ -20,7 +20,11 @@ Usage: < -i {g09.out} g09 Freq output file> <-n1 (normal mode 1)> <-n2 (normal m
 	   < -l (integer 0-3, loudness) > < -p just print moving atoms and quit> < -a (integer, atom number) print atom >\n\
 Use of the '-a' option will print additional atoms displacements, and can be used for multiple atoms,\n\
 	for example -a 3 -a 4 -a 7   will add atoms 3,4, and 7 to the normal mode print list. \n\
-TIP: use -l 2 to get information in table format.\n";
+TIP: use -l 2 to get information in table format.\n\n\
+Please cite \"Determination of the Absolute Configurations Using\n\
+   Exciton Chirality Method for Vibrational Circular Dichroism:\n\
+   Right Answers for the Wrong Reasons?, C. L. Covington, V. P. Nicu,\n\
+   P.L.Polavarapu,  J. Phys. Chem. A, 2015, 119 (42), pp 10589-10601\"\n";
 //	   < --detect use automatic detection of normal mode and groups>\n";
 	   
 string PN="exciton_from_QM";
@@ -39,7 +43,7 @@ int main (int argc, char *argv[])
     } 
     string INFILE="g09.out"; //default file in and out 
     int i=1,nm1=0,nm2=0,g1a1=0,g1a2=0,g2a1=0,g2a2=0;
-	bool detect=false, early_quit=false;
+	bool early_quit=false;
 	vector<int> print_list;
     while (i + 1 <= argc){ // Check that we haven't finished parsing already
         string ARG=argv[i];
@@ -308,11 +312,11 @@ int main (int argc, char *argv[])
 		Torder1 pG1A2 = getAP(&crd,g1a2) ;
 		Torder1 pG2A1 = getAP(&crd,g2a1) ;
 		Torder1 pG2A2 = getAP(&crd,g2a2) ;
-		if(ql==0){ facG1=0.0; facG2=0.0;       cout<<"E_EquilC ";   } // equilibrium crd
-		if(ql==1){ facG1=0.009; facG2=0.009;   cout<<"E_SymStr ";   }// sym stretch
-		if(ql==2){ facG1=-0.009; facG2=-0.009; cout<<"E_SymCom ";   }// sym compression	
-		if(ql==3){ facG1=0.009; facG2=-0.009;  cout<<"E_ASym1  ";   }// Asym 1
-		if(ql==4){ facG1=-0.009; facG2=0.009;  cout<<"E_ASym2  ";  }// Asym 2			
+		if(ql==0){ facG1=0.0; facG2=0.0;       Log(2)<<"E_EquilC ";   } // equilibrium crd
+		if(ql==1){ facG1=0.009; facG2=0.009;   Log(2)<<"E_SymStr ";   }// sym stretch
+		if(ql==2){ facG1=-0.009; facG2=-0.009; Log(2)<<"E_SymCom ";   }// sym compression	
+		if(ql==3){ facG1=0.009; facG2=-0.009;  Log(2)<<"E_ASym1  ";   }// Asym 1
+		if(ql==4){ facG1=-0.009; facG2=0.009;  Log(2)<<"E_ASym2  ";  }// Asym 2			
 		pG1A1 -= (facG1)%bv1; // minus because bv1 points from C-O
 		pG1A2 += (facG1)%bv1;
 		pG2A1 -= (facG2)%bv2; // minus because bv1 points from C-O
@@ -325,17 +329,17 @@ int main (int argc, char *argv[])
 		Eexact[ql] += crd.c(g1a1)*crd.c(g2a2)/( dG1A1A2.mag() );
 		Eexact[ql] += crd.c(g1a2)*crd.c(g2a1)/( dG1A2A1.mag() );
 		Eexact[ql] += crd.c(g1a2)*crd.c(g2a2)/( dG1A2A2.mag() );
-		cout <<"\t"<<Eexact[ql];
-		if(ql>0) cout<<"\tDiff="<<Eexact[ql]-Eexact[0];
-		cout <<"\n";
+		Log(2) <<"\t"<<Eexact[ql];
+		if(ql>0) Log(2)<<"\tDiff="<<Eexact[ql]-Eexact[0];
+		Log(2) <<"\n";
 	}
 	double avg_Sym = (Eexact[1]+Eexact[2])/2 -Eexact[0];
 	double avg_ASm = (Eexact[3]+Eexact[4])/2 -Eexact[0];
-	cout <<"Avg Sym="<<avg_Sym<<"\tAvg ASym="<<avg_ASm<<"\n";
-	if(avg_Sym > avg_ASm) cout <<"EXACT_INTERACTION_ORDER_LOW-HIGH_FREQ= -1,+1\n";
-	if(avg_Sym < avg_ASm) cout <<"EXACT_INTERACTION_ORDER_LOW-HIGH_FREQ= +1,-1\n";
-	if(V12 > 0) cout <<"APPROXIMATE_INTERACTION_ORDER_LOW-HIGH_FREQ= -1,+1\n";
-	if(V12 < 0) cout <<"APPROXIMATE_INTERACTION_ORDER_LOW-HIGH_FREQ= +1,-1\n";
+	Log(2) <<"Avg Sym="<<avg_Sym<<"\tAvg ASym="<<avg_ASm<<"\n";
+	if(avg_Sym > avg_ASm) Log(2) <<"EXACT_INTERACTION_ORDER_LOW-HIGH_FREQ= -1,+1\n";
+	if(avg_Sym < avg_ASm) Log(2) <<"EXACT_INTERACTION_ORDER_LOW-HIGH_FREQ= +1,-1\n";
+	if(V12 > 0) Log(2) <<"APPROXIMATE_INTERACTION_ORDER_LOW-HIGH_FREQ= -1,+1\n";
+	if(V12 < 0) Log(2) <<"APPROXIMATE_INTERACTION_ORDER_LOW-HIGH_FREQ= +1,-1\n";
 	//-------------------------------------------------------------------------------------
 	// calculate R
 	double F = (Freq.at(nm1-1) + Freq.at(nm2-1))/2 ; // average Freq
@@ -343,6 +347,7 @@ int main (int argc, char *argv[])
 	double R = dotp(vecR12cm, (bv1|bv2) )*D ; // R is R_plus combination
 	R *= F*3.1415/2;
 	R *= (-1)*1e4; // convert to (10**-44 esu**2-cm**2)
+	cout <<"\n-----------------------------------------\n";
 	cout <<"R+="<<R<<" F+="<<F+V12<<" cm-1\n"; 
 	cout <<" R-="<<-R<<" F-="<<F-V12<<" cm-1\n";
 	double dihed = xyzvec_dihedral(g1a2,g1a1,g2a1,g2a2,&crd);
@@ -423,5 +428,11 @@ int main (int argc, char *argv[])
 		
 		
 	}
+	cout <<"\n\
+Please cite \"Determination of the Absolute Configurations Using\n\
+   Exciton Chirality Method for Vibrational Circular Dichroism:\n\
+   Right Answers for the Wrong Reasons?, C. L. Covington, V. P. Nicu,\n\
+   P.L.Polavarapu,  J. Phys. Chem. A, 2015, 119 (42), pp 10589-10601\"\n";
+			
 return 0;
 }
